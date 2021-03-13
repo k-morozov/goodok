@@ -7,6 +7,10 @@ import java.lang.Thread;
 import java.util.ArrayList;
 
 public class SimpleService implements IService {
+    public ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
     private ServerSocket serverSocket;
     private ArrayList<Socket> socketsClients;
 
@@ -23,6 +27,8 @@ public class SimpleService implements IService {
             System.out.println("Server init. Wait connections...");
         } catch (Exception ex) {
             System.out.println("Exception when create socket");
+            throw new IllegalArgumentException(
+                    "Port value out of range: " + port);
         }
     }
 
