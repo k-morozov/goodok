@@ -35,7 +35,8 @@ public class SimpleService implements IService {
                 if (socketClient == null) {
                     break;
                 }
-                Handler handler = new Handler(socketClient);
+                socketsClients.add(socketClient);
+                SimpleService.Handler handler = new SimpleService.Handler(socketClient);
                 Thread thread = new Thread(handler);
                 threads.add(thread);
                 thread.start();
@@ -48,7 +49,33 @@ public class SimpleService implements IService {
         }
     }
 
-    private class Handler implements Runnable {
+    @Override
+    public void notifyClients(Socket fromClient, String msg) {
+        for (Socket sock: socketsClients) {
+            try{
+                if (sock == fromClient) {
+                    continue;
+                }
+                if (sock.isConnected()) {
+                    OutputStream os = sock.getOutputStream();
+                    DataOutputStream out = new DataOutputStream(os);
+                    out.writeUTF(msg + '\n');
+                    out.flush();
+                }
+            } catch (Exception ex) {
+                System.out.println("SimpleService.send");
+            }
+        }
+    }
+
+    private void removeClient(Socket socketClient) throws IOException {
+        if (!socketClient.isClosed()) {
+            serverSocket.close();
+        }
+        socketsClients.remove(socketClient);
+    }
+
+    class Handler implements Runnable {
         private final Socket _socketClient;
 
         public Handler(Socket socketClient) {
@@ -60,7 +87,7 @@ public class SimpleService implements IService {
             if (_socketClient == null) {
                 return;
             }
-            socketsClients.add(_socketClient);
+
             try {
                 System.out.println("New client from: " +
                         _socketClient.getRemoteSocketAddress());
@@ -70,33 +97,17 @@ public class SimpleService implements IService {
                     String line = in.readLine();
                     if (line == null) {
                         System.out.println("Close connection");
-                        socketsClients.remove(_socketClient);
+                        SimpleService.this.removeClient(_socketClient);
                         break;
                     }
                     System.out.println("read: " + line);
-                    send(line);
+                    SimpleService.this.notifyClients(_socketClient, line);
                 }
             } catch (Exception ex) {
                 System.out.println("Exception in thread");
             }
         }
 
-        private void send(String msg) {
-            for (Socket sock: socketsClients) {
-                try{
-                    if (sock == _socketClient) {
-                        continue;
-                    }
-                    if (sock.isConnected()) {
-                        OutputStream os = sock.getOutputStream();
-                        DataOutputStream out = new DataOutputStream(os);
-                        out.writeUTF(msg + '\n');
-                        out.flush();
-                    }
-                } catch (Exception ex) {
-                    System.out.println("SimpleService.send");
-                }
-            }
-        }
+
     }
 }
