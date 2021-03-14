@@ -7,11 +7,8 @@ import java.lang.Thread;
 import java.util.ArrayList;
 
 public class SimpleService implements IService {
-    public ServerSocket getServerSocket() {
-        return serverSocket;
-    }
-
     private ServerSocket serverSocket;
+
     private ArrayList<Socket> socketsClients;
 
     public static SimpleService create() {
@@ -21,10 +18,8 @@ public class SimpleService implements IService {
     @Override
     public void init(int port) {
         try {
-            serverSocket = new ServerSocket(port);
-            socketsClients = new ArrayList<>();
-
-            System.out.println("Server init. Wait connections...");
+            serverSocket = createServerSocket(port);
+            socketsClients = createSocketsClients();
         } catch (Exception ex) {
             System.out.println("Exception when create socket");
             throw new IllegalArgumentException(
@@ -33,38 +28,44 @@ public class SimpleService implements IService {
     }
 
     @Override
-    public void run() {
+    public void run() throws IOException {
         try {
             ArrayList<Thread> threads = new ArrayList<>();
             while (true) {
-                Socket socketClient = serverSocket.accept();
-                if (socketClient == null) {
-                    break;
-                }
-                socketsClients.add(socketClient);
-                SimpleService.Handler handler = new SimpleService.Handler(socketClient);
-                Thread thread = new Thread(handler);
-                threads.add(thread);
-                thread.start();
-            }
-            for (Thread thread : threads) {
-                thread.join();
+                startConnection(threads);
             }
         } catch (Exception ex) {
             System.out.println("Exception when client connecting");
+            throw ex;
         }
+    }
+
+    protected void startConnection(ArrayList<Thread> threads) throws IOException {
+        Socket socketClient = getSocketConnection(serverSocket);
+        if (socketClient == null) {
+            return;
+        }
+        getSocketsClients().add(socketClient);
+
+        HandlerConnection handlerConnection = getNewHandlerConnection(socketClient);
+        Thread thread = new Thread(handlerConnection);
+        threads.add(thread);
+        thread.start();
+    }
+
+    protected HandlerConnection getNewHandlerConnection(Socket socketClient) {
+        return new HandlerConnection(socketClient, this::notifyClients, this::removeClient);
     }
 
     @Override
     public void notifyClients(Socket fromClient, String msg) {
-        for (Socket sock: socketsClients) {
+        for (Socket sock: getSocketsClients()) {
             try{
                 if (sock == fromClient) {
                     continue;
                 }
                 if (sock.isConnected()) {
-                    OutputStream os = sock.getOutputStream();
-                    DataOutputStream out = new DataOutputStream(os);
+                    DataOutputStream out = getSockStreamOut(sock);
                     out.writeUTF(msg + '\n');
                     out.flush();
                 }
@@ -74,46 +75,38 @@ public class SimpleService implements IService {
         }
     }
 
-    private void removeClient(Socket socketClient) throws IOException {
-        if (!socketClient.isClosed()) {
-            serverSocket.close();
+    protected void removeClient(Socket socketClient) {
+        try {
+            ArrayList<Socket> sockClients = getSocketsClients();
+            sockClients.remove(socketClient);
+        } catch (Exception ex) {
+            System.out.println("SimpleService.removeClient");
         }
-        socketsClients.remove(socketClient);
     }
 
-    class Handler implements Runnable {
-        private final Socket _socketClient;
-
-        public Handler(Socket socketClient) {
-            _socketClient = socketClient;
-        }
-
-        @Override
-        public void run() {
-            if (_socketClient == null) {
-                return;
-            }
-
-            try {
-                System.out.println("New client from: " +
-                        _socketClient.getRemoteSocketAddress());
-                InputStream sin = _socketClient.getInputStream();
-                BufferedReader in = new BufferedReader(new InputStreamReader(sin));
-                while (true) {
-                    String line = in.readLine();
-                    if (line == null) {
-                        System.out.println("Close connection");
-                        SimpleService.this.removeClient(_socketClient);
-                        break;
-                    }
-                    System.out.println("read: " + line);
-                    SimpleService.this.notifyClients(_socketClient, line);
-                }
-            } catch (Exception ex) {
-                System.out.println("Exception in thread");
-            }
-        }
-
-
+    public ServerSocket getServerSocket() {
+        return serverSocket;
     }
+
+    protected ServerSocket createServerSocket(int port) throws IOException {
+        return new ServerSocket(port);
+    }
+
+    protected Socket getSocketConnection(ServerSocket socket) throws IOException {
+        return socket.accept();
+    }
+
+    protected DataOutputStream getSockStreamOut(Socket sock) throws IOException {
+        return new DataOutputStream(sock.getOutputStream());
+    }
+
+    protected ArrayList<Socket> getSocketsClients() {
+        return socketsClients;
+    }
+
+    protected ArrayList<Socket> createSocketsClients() {
+        return new ArrayList<>();
+    }
+
+
 }
