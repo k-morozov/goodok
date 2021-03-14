@@ -25,7 +25,7 @@ public class HandlerConnectionTest {
     }
 
     @Test
-    public void getNewValidOneMsg() throws IOException {
+    public void sendToClientValidOneMsg() throws IOException {
         final BufferedReader fakeBufReader = Mockito.mock(BufferedReader.class);
         final Socket fakeSocketClient = Mockito.mock(Socket.class);
         Mockito.when(fakeBufReader.readLine()).thenReturn(null);
@@ -47,7 +47,7 @@ public class HandlerConnectionTest {
     }
 
     @Test
-    public void getNewValidTwoMsg() throws IOException {
+    public void sendToClientValidTwoMsg() throws IOException {
         final BufferedReader fakeBufReader = Mockito.mock(BufferedReader.class);
         final Socket fakeSocketClient = Mockito.mock(Socket.class);
         Mockito.when(fakeBufReader.readLine()).thenReturn(null);
@@ -78,5 +78,29 @@ public class HandlerConnectionTest {
     public void run() {
         HandlerConnection handler = new HandlerConnection(null, null, null);
         handler.run();
+    }
+
+    @Test
+    public void getNewMsgValidOne() throws IOException {
+        final BufferedReader fakeBufReader = Mockito.mock(BufferedReader.class);
+        String text = "test msg #1";
+        Mockito.when(fakeBufReader.readLine()).thenReturn(text);
+
+        ArrayList<String> responses = new ArrayList<>();
+        ArrayList<String> expected = new ArrayList<>();
+        HandlerConnection handler = new HandlerConnection(null, null, null) {
+            @Override
+            protected void sendToClient(Socket socketClient, String msg) {
+                responses.add(msg);
+            }
+        };
+
+        handler.getNewMsg(fakeBufReader);
+        assertEquals(1, responses.size());
+        assertEquals(text, responses.get(0));
+    }
+
+    @Test
+    public void testRun() {
     }
 }
