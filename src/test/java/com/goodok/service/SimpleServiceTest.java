@@ -1,31 +1,50 @@
 package com.goodok.service;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import static org.junit.Assert.*;
 
 public class SimpleServiceTest {
 
     @Test
-    public void createValid() {
-        IService service = SimpleService.create();
-        assertNotNull(service);
+    public void prepareService() throws IOException {
+        final ServerSocket serverSocket = Mockito.mock(ServerSocket.class);
+        final Socket clientSocket = Mockito.mock(Socket.class);
+        Mockito.when(serverSocket.accept()).thenReturn(clientSocket);
+
+        SimpleService service = new SimpleService() {
+            @Override
+            protected ServerSocket createServerSocket(int port) {
+                return serverSocket;
+            }
+        };
+
+        assertTrue(serverSocket.equals(service.createServerSocket(7777)));
     }
 
     @Test
-    public void initValidPort() {
-        SimpleService service = SimpleService.create();
-        assertNull(service.getServerSocket());
-        final int port = 8018;
-        service.init(port);
+    public void checkInitBasic() throws IOException {
+        final ServerSocket serverSocket = Mockito.mock(ServerSocket.class);
+
+        SimpleService service = new SimpleService() {
+            @Override
+            protected ServerSocket createServerSocket(int port) {
+                return serverSocket;
+            }
+        };
+
+        service.init(7777);
         assertNotNull(service.getServerSocket());
+        assertTrue(service.getServerSocket().equals(serverSocket));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void initFailedPort() {
-        SimpleService service = SimpleService.create();
-        assertNull(service.getServerSocket());
-        final int port = -1;
-        service.init(port);
+    @Test
+    public void checkRunBasic() throws IOException {
+
     }
+
 }

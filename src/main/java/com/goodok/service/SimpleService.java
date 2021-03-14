@@ -14,6 +14,11 @@ public class SimpleService implements IService {
     }
 
     private ServerSocket serverSocket;
+
+    public ArrayList<Socket> getSocketsClients() {
+        return socketsClients;
+    }
+
     private ArrayList<Socket> socketsClients;
 
     public static SimpleService create() {
@@ -23,10 +28,8 @@ public class SimpleService implements IService {
     @Override
     public void init(int port) {
         try {
-            serverSocket = new ServerSocket(port);
+            serverSocket = createServerSocket(port);
             socketsClients = new ArrayList<>();
-
-            System.out.println("Server init. Wait connections...");
         } catch (Exception ex) {
             System.out.println("Exception when create socket");
             throw new IllegalArgumentException(
@@ -39,11 +42,11 @@ public class SimpleService implements IService {
         try {
             ArrayList<Thread> threads = new ArrayList<>();
             while (true) {
-                Socket socketClient = serverSocket.accept();
+                Socket socketClient = getSocketConnection(serverSocket);
                 if (socketClient == null) {
                     break;
                 }
-                socketsClients.add(socketClient);
+                getSocketsClients().add(socketClient);
 
                 HandlerConnection handlerConnection = new HandlerConnection(socketClient, this::notifyClients, this::removeClient);
                 Thread thread = new Thread(handlerConnection);
@@ -61,7 +64,7 @@ public class SimpleService implements IService {
 
     @Override
     public void notifyClients(Socket fromClient, String msg) {
-        for (Socket sock: socketsClients) {
+        for (Socket sock: getSocketsClients()) {
             try{
                 if (sock == fromClient) {
                     continue;
@@ -84,6 +87,14 @@ public class SimpleService implements IService {
         } catch (Exception ex) {
             System.out.println("SimpleService.removeClient");
         }
+    }
+
+    protected ServerSocket createServerSocket(int port) throws IOException {
+        return new ServerSocket(port);
+    }
+
+    protected Socket getSocketConnection(ServerSocket socket) throws IOException {
+        return socket.accept();
     }
 
 

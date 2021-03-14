@@ -8,6 +8,7 @@ public final class GoodOkApp {
         try {
             SimpleService server = SimpleService.create();
             server.init(port);
+            System.out.println("Server init. Wait connections...");
             server.run();
         } catch (Exception ex) {
             ex.printStackTrace();
