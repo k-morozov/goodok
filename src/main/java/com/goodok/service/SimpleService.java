@@ -5,6 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.lang.Thread;
 import java.util.ArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class SimpleService implements IService {
     public ServerSocket getServerSocket() {
@@ -37,12 +39,25 @@ public class SimpleService implements IService {
         try {
             ArrayList<Thread> threads = new ArrayList<>();
             while (true) {
+
                 Socket socketClient = serverSocket.accept();
                 if (socketClient == null) {
                     break;
                 }
                 socketsClients.add(socketClient);
-                SimpleService.Handler handler = new SimpleService.Handler(socketClient);
+
+                BiConsumer<Socket, String> funcSend = (Socket _sock, String msg) -> {
+                    notifyClients(_sock, msg + '\n');
+                };
+                Consumer<Socket> funcRemoveClient = (Socket _socketClient) -> {
+                    try {
+                        removeClient(_socketClient);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                };
+
+                Handler handler = new Handler(socketClient, funcSend, funcRemoveClient);
                 Thread thread = new Thread(handler);
                 threads.add(thread);
                 thread.start();
@@ -52,6 +67,7 @@ public class SimpleService implements IService {
             }
         } catch (Exception ex) {
             System.out.println("Exception when client connecting");
+            ex.printStackTrace();
         }
     }
 
@@ -65,7 +81,7 @@ public class SimpleService implements IService {
                 if (sock.isConnected()) {
                     OutputStream os = sock.getOutputStream();
                     DataOutputStream out = new DataOutputStream(os);
-                    out.writeUTF(msg + '\n');
+                    out.writeUTF(msg);
                     out.flush();
                 }
             } catch (Exception ex) {
@@ -75,45 +91,8 @@ public class SimpleService implements IService {
     }
 
     private void removeClient(Socket socketClient) throws IOException {
-        if (!socketClient.isClosed()) {
-            serverSocket.close();
-        }
         socketsClients.remove(socketClient);
     }
 
-    class Handler implements Runnable {
-        private final Socket _socketClient;
 
-        public Handler(Socket socketClient) {
-            _socketClient = socketClient;
-        }
-
-        @Override
-        public void run() {
-            if (_socketClient == null) {
-                return;
-            }
-
-            try {
-                System.out.println("New client from: " +
-                        _socketClient.getRemoteSocketAddress());
-                InputStream sin = _socketClient.getInputStream();
-                BufferedReader in = new BufferedReader(new InputStreamReader(sin));
-                while (true) {
-                    String line = in.readLine();
-                    if (line == null) {
-                        System.out.println("Close connection");
-                        SimpleService.this.removeClient(_socketClient);
-                        break;
-                    }
-                    System.out.println("read: " + line);
-                    SimpleService.this.notifyClients(_socketClient, line);
-                }
-            } catch (Exception ex) {
-                System.out.println("Exception in thread");
-            }
-        }
-
-
-    }
 }
