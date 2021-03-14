@@ -5,19 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.lang.Thread;
 import java.util.ArrayList;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public class SimpleService implements IService {
-    public ServerSocket getServerSocket() {
-        return serverSocket;
-    }
-
     private ServerSocket serverSocket;
-
-    public ArrayList<Socket> getSocketsClients() {
-        return socketsClients;
-    }
 
     private ArrayList<Socket> socketsClients;
 
@@ -29,7 +19,7 @@ public class SimpleService implements IService {
     public void init(int port) {
         try {
             serverSocket = createServerSocket(port);
-            socketsClients = new ArrayList<>();
+            socketsClients = createSocketsClients();
         } catch (Exception ex) {
             System.out.println("Exception when create socket");
             throw new IllegalArgumentException(
@@ -42,24 +32,32 @@ public class SimpleService implements IService {
         try {
             ArrayList<Thread> threads = new ArrayList<>();
             while (true) {
-                Socket socketClient = getSocketConnection(serverSocket);
-                if (socketClient == null) {
-                    break;
-                }
-                getSocketsClients().add(socketClient);
-
-                HandlerConnection handlerConnection = new HandlerConnection(socketClient, this::notifyClients, this::removeClient);
-                Thread thread = new Thread(handlerConnection);
-                threads.add(thread);
-                thread.start();
+                startConnection(threads);
             }
-            for (Thread thread : threads) {
-                thread.join();
-            }
+//            for (Thread thread : threads) {
+//                thread.join();
+//            }
         } catch (Exception ex) {
             System.out.println("Exception when client connecting");
             ex.printStackTrace();
         }
+    }
+
+    protected void startConnection(ArrayList<Thread> threads) throws IOException {
+        Socket socketClient = getSocketConnection(serverSocket);
+        if (socketClient == null) {
+            return;
+        }
+        getSocketsClients().add(socketClient);
+
+        HandlerConnection handlerConnection = getNewHandlerConnection(socketClient);
+        Thread thread = new Thread(handlerConnection);
+        threads.add(thread);
+        thread.start();
+    }
+
+    protected HandlerConnection getNewHandlerConnection(Socket socketClient) {
+        return new HandlerConnection(socketClient, this::notifyClients, this::removeClient);
     }
 
     @Override
@@ -70,8 +68,7 @@ public class SimpleService implements IService {
                     continue;
                 }
                 if (sock.isConnected()) {
-                    OutputStream os = sock.getOutputStream();
-                    DataOutputStream out = new DataOutputStream(os);
+                    DataOutputStream out = getSockStreamOut(sock);
                     out.writeUTF(msg + '\n');
                     out.flush();
                 }
@@ -81,12 +78,17 @@ public class SimpleService implements IService {
         }
     }
 
-    private void removeClient(Socket socketClient) {
+    protected void removeClient(Socket socketClient) {
         try {
-            socketsClients.remove(socketClient);
+            ArrayList<Socket> sockClients = getSocketsClients();
+            sockClients.remove(socketClient);
         } catch (Exception ex) {
             System.out.println("SimpleService.removeClient");
         }
+    }
+
+    public ServerSocket getServerSocket() {
+        return serverSocket;
     }
 
     protected ServerSocket createServerSocket(int port) throws IOException {
@@ -95,6 +97,18 @@ public class SimpleService implements IService {
 
     protected Socket getSocketConnection(ServerSocket socket) throws IOException {
         return socket.accept();
+    }
+
+    protected DataOutputStream getSockStreamOut(Socket sock) throws IOException {
+        return new DataOutputStream(sock.getOutputStream());
+    }
+
+    protected ArrayList<Socket> getSocketsClients() {
+        return socketsClients;
+    }
+
+    protected ArrayList<Socket> createSocketsClients() {
+        return new ArrayList<>();
     }
 
 
