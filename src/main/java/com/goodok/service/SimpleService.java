@@ -39,26 +39,14 @@ public class SimpleService implements IService {
         try {
             ArrayList<Thread> threads = new ArrayList<>();
             while (true) {
-
                 Socket socketClient = serverSocket.accept();
                 if (socketClient == null) {
                     break;
                 }
                 socketsClients.add(socketClient);
 
-                BiConsumer<Socket, String> funcSend = (Socket _sock, String msg) -> {
-                    notifyClients(_sock, msg + '\n');
-                };
-                Consumer<Socket> funcRemoveClient = (Socket _socketClient) -> {
-                    try {
-                        removeClient(_socketClient);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                };
-
-                Handler handler = new Handler(socketClient, funcSend, funcRemoveClient);
-                Thread thread = new Thread(handler);
+                HandlerConnection handlerConnection = new HandlerConnection(socketClient, this::notifyClients, this::removeClient);
+                Thread thread = new Thread(handlerConnection);
                 threads.add(thread);
                 thread.start();
             }
@@ -81,7 +69,7 @@ public class SimpleService implements IService {
                 if (sock.isConnected()) {
                     OutputStream os = sock.getOutputStream();
                     DataOutputStream out = new DataOutputStream(os);
-                    out.writeUTF(msg);
+                    out.writeUTF(msg + '\n');
                     out.flush();
                 }
             } catch (Exception ex) {
@@ -90,8 +78,12 @@ public class SimpleService implements IService {
         }
     }
 
-    private void removeClient(Socket socketClient) throws IOException {
-        socketsClients.remove(socketClient);
+    private void removeClient(Socket socketClient) {
+        try {
+            socketsClients.remove(socketClient);
+        } catch (Exception ex) {
+            System.out.println("SimpleService.removeClient");
+        }
     }
 
 

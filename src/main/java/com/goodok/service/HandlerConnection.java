@@ -7,12 +7,12 @@ import java.net.Socket;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class Handler implements Runnable {
+public class HandlerConnection implements Runnable {
     private final Socket _socketClient;
     private final BiConsumer<Socket, String> callbackSend;
     private final Consumer<Socket> callbackRemoveClient;
 
-    public Handler(Socket socketClient, BiConsumer<Socket, String> funcSend, Consumer<Socket> funcRemoveClient) {
+    public HandlerConnection(Socket socketClient, BiConsumer<Socket, String> funcSend, Consumer<Socket> funcRemoveClient) {
         _socketClient = socketClient;
         callbackSend = funcSend;
         callbackRemoveClient = funcRemoveClient;
