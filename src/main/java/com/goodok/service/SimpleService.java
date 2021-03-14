@@ -28,18 +28,15 @@ public class SimpleService implements IService {
     }
 
     @Override
-    public void run() {
+    public void run() throws IOException {
         try {
             ArrayList<Thread> threads = new ArrayList<>();
             while (true) {
                 startConnection(threads);
             }
-//            for (Thread thread : threads) {
-//                thread.join();
-//            }
         } catch (Exception ex) {
             System.out.println("Exception when client connecting");
-            ex.printStackTrace();
+            throw ex;
         }
     }
 

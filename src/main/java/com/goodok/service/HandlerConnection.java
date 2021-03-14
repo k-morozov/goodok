@@ -1,6 +1,7 @@
 package com.goodok.service;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
@@ -10,6 +11,7 @@ import java.util.function.Consumer;
 public class HandlerConnection implements Runnable {
     private final Socket _socketClient;
     private final BiConsumer<Socket, String> callbackSend;
+
     private final Consumer<Socket> callbackRemoveClient;
 
     public HandlerConnection(Socket socketClient, BiConsumer<Socket, String> funcSend, Consumer<Socket> funcRemoveClient) {
@@ -21,26 +23,42 @@ public class HandlerConnection implements Runnable {
     @Override
     public void run() {
         if (_socketClient == null) {
-            return;
+            throw new IllegalArgumentException("socket == null");
         }
 
         try {
             System.out.println("New client from: " +
                     _socketClient.getRemoteSocketAddress());
-            InputStream sin = _socketClient.getInputStream();
-            BufferedReader in = new BufferedReader(new InputStreamReader(sin));
+            BufferedReader in = getReaderFromSocket();
             while (true) {
-                String line = in.readLine();
-                if (line == null) {
-                    System.out.println("Close connection");
-                    callbackRemoveClient.accept(_socketClient);
-                    break;
-                }
-                System.out.println("read: " + line);
-                callbackSend.accept(_socketClient, line);
+                getNewMsg(in);
             }
         } catch (Exception ex) {
-            System.out.println("Exception in thread");
+            System.out.println("finish HandlerConnection.run");
         }
+    }
+
+    protected void getNewMsg(BufferedReader in) throws IOException {
+        String line = in.readLine();
+        if (line == null) {
+            System.out.println("Close connection");
+            sendRemoveClient(_socketClient);
+            throw new IllegalArgumentException("Empty line: close connection");
+        }
+        System.out.println("read: " + line);
+        sendToClient(_socketClient, line);
+    }
+
+    protected BufferedReader getReaderFromSocket() throws IOException {
+        InputStream sin = _socketClient.getInputStream();
+        return new BufferedReader(new InputStreamReader(sin));
+    }
+
+    protected void sendToClient(Socket socketClient, String msg) {
+        callbackSend.accept(_socketClient, msg);
+    }
+
+    protected void sendRemoveClient(Socket socketClient) {
+        callbackRemoveClient.accept(_socketClient);
     }
 }

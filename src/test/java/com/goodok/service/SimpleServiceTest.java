@@ -30,6 +30,30 @@ public class SimpleServiceTest {
         assertEquals(serverSocket, service.createServerSocket(7777));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void initWithExcept() {
+        SimpleService service = new SimpleService() {
+          @Override
+          protected ServerSocket createServerSocket(int port) throws IOException {
+              throw new IllegalArgumentException("");
+          }
+        };
+
+        service.init(7777);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void runWithException() throws IOException {
+        SimpleService service = new SimpleService() {
+            @Override
+            protected void startConnection(ArrayList<Thread> threads) throws IOException {
+                throw new IllegalArgumentException("");
+            }
+        };
+
+        service.run();
+    }
+
     @Test
     public void checkInitBasic() throws IOException {
         final ServerSocket serverSocket = Mockito.mock(ServerSocket.class);
@@ -239,4 +263,7 @@ public class SimpleServiceTest {
 
         Mockito.verify(fakeHandlerConnection, Mockito.times(0)).run();
     }
+
+
+
 }
