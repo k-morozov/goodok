@@ -20,7 +20,7 @@ public class SimpleService implements IService {
             serverSocket = createServerSocket(port);
             socketsClients = createSocketsClients();
         } catch (Exception ex) {
-            System.out.println("Exception when create socket");
+            System.err.println("Exception when create socket");
             throw new IllegalArgumentException(
                     "Port value out of range: " + port);
         }
@@ -34,7 +34,7 @@ public class SimpleService implements IService {
                 startConnection(threads);
             }
         } catch (Exception ex) {
-            System.out.println("Exception when client connecting");
+            System.err.println("Exception when client connecting");
             throw ex;
         }
     }
@@ -73,7 +73,7 @@ public class SimpleService implements IService {
                     out.flush();
                 }
             } catch (Exception ex) {
-                System.out.println("SimpleService.send");
+                System.err.println("SimpleService.send");
             }
         }
     }
@@ -83,7 +83,7 @@ public class SimpleService implements IService {
             ArrayList<Socket> sockClients = getSocketsClients();
             sockClients.remove(socketClient);
         } catch (Exception ex) {
-            System.out.println("SimpleService.removeClient");
+            System.err.println("SimpleService.removeClient");
         }
     }
 

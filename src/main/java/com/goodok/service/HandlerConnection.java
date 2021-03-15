@@ -34,7 +34,7 @@ public class HandlerConnection implements Runnable {
                 processCurrentConnection(in);
             }
         } catch (Exception ex) {
-            System.out.println("finish HandlerConnection.run");
+            System.err.println("finish HandlerConnection.run");
         }
     }
 
