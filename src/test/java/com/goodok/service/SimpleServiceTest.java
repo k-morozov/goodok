@@ -1,6 +1,7 @@
 package com.goodok.service;
 
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.io.DataOutputStream;
@@ -264,6 +265,17 @@ public class SimpleServiceTest {
         Mockito.verify(fakeHandlerConnection, Mockito.times(0)).run();
     }
 
+    @Test
+    public void runHandlerNewThreadBasic() throws InterruptedException {
+        final HandlerConnection handler = Mockito.mock(HandlerConnection.class);
+        SimpleService service = new SimpleService();
 
+        ArrayList<Thread> threads = new ArrayList<>();
+        service.runHandlerNewThread(threads, handler);
+
+        assertEquals(1, threads.size());
+        threads.get(0).join();
+        Mockito.verify(handler, Mockito.times(1)).run();
+    }
 
 }

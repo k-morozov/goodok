@@ -8,7 +8,6 @@ import java.util.ArrayList;
 
 public class SimpleService implements IService {
     private ServerSocket serverSocket;
-
     private ArrayList<Socket> socketsClients;
 
     public static SimpleService create() {
@@ -48,7 +47,11 @@ public class SimpleService implements IService {
         getSocketsClients().add(socketClient);
 
         HandlerConnection handlerConnection = getNewHandlerConnection(socketClient);
-        Thread thread = new Thread(handlerConnection);
+        runHandlerNewThread(threads, handlerConnection);
+    }
+
+    protected void runHandlerNewThread(ArrayList<Thread> threads, HandlerConnection handler) {
+        Thread thread = new Thread(handler);
         threads.add(thread);
         thread.start();
     }

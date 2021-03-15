@@ -21,7 +21,7 @@ public class HandlerConnectionTest {
             @Override
             protected void sendRemoveClient(Socket socketClient) { }
         };
-        handler.getNewMsg(fakeBufReader);
+        handler.processCurrentConnection(fakeBufReader);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class HandlerConnectionTest {
             }
         };
 
-        handler.getNewMsg(fakeBufReader);
+        handler.processCurrentConnection(fakeBufReader);
         assertEquals(1, responses.size());
         assertEquals(text, responses.get(0));
     }
