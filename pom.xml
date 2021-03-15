@@ -43,7 +43,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.goodok.application.GoodOkApp</mainClass>
+                            <mainClass>com.goodok.application.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

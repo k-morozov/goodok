@@ -26,19 +26,19 @@ public class HandlerConnection implements Runnable {
             throw new IllegalArgumentException("socket == null");
         }
 
-        try {
-            System.out.println("New client from: " +
-                    _socketClient.getRemoteSocketAddress());
-            BufferedReader in = getReaderFromSocket();
+        System.out.println("New client from: " +
+                _socketClient.getRemoteSocketAddress());
+
+        try (BufferedReader in = getReaderFromSocket()) {
             while (true) {
-                getNewMsg(in);
+                processCurrentConnection(in);
             }
         } catch (Exception ex) {
             System.out.println("finish HandlerConnection.run");
         }
     }
 
-    protected void getNewMsg(BufferedReader in) throws IOException {
+    protected void processCurrentConnection(BufferedReader in) throws IOException {
         String line = in.readLine();
         if (line == null) {
             System.out.println("Close connection");

@@ -2,7 +2,7 @@ package com.goodok.application;
 
 import com.goodok.service.SimpleService;
 
-public final class GoodOkApp {
+public final class Application {
     public static void main(final String[] args) {
         final int port = 8018;
         try {
